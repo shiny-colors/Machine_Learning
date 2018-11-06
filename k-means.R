@@ -2,6 +2,7 @@
 library(MASS)
 library(dplyr)
 library(reshape2)
+
 ####データの発生#####
 #set.seed(493)
 k <- 4   #クラスター数

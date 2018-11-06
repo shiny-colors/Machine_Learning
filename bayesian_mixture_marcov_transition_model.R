@@ -13,7 +13,7 @@ library(ggplot2)
 #set.seed(90345)
 
 ####データの発生####
-hh <- 5000   #ユーザー数
+hh <- 10000   #ユーザー数
 S <- 20   #ページ数
 k <- 10   #混合数
 seg <- as.numeric(rmnom(hh, 1, rep(1, k)) %*% 1:k)

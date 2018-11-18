@@ -16,8 +16,8 @@ library(lattice)
 set.seed(4965723)
 
 ####データの発生####
-k <- 8   #混合数
-d <- 2000   #ノード数
+k <- 10   #混合数
+d <- 3000   #ノード数
 
 #ノード構造を設定
 theta <- extraDistr::rdirichlet(d, rep(0.2, 2*k))
@@ -65,11 +65,10 @@ f <- sum(w)
 #パラメータの事前分布
 k0 <- k/2
 alpha1 <- rep(0.15, k)
-beta01 <- 5.0
-beta02 <- 5.5
-beta03 <- 1.5
-beta04 <- 5.0
-
+beta01 <- 1.0
+beta02 <- 0.5
+beta03 <- 0.5
+beta04 <- 1.75
 
 #パラメータを生成
 phi <- matrix(0, nrow=k, ncol=k)
@@ -118,6 +117,8 @@ Z2 <- do.call(rbind, Z2_list)
 index_link <- which(y==1)
 
 
+
+
 ####マルコフ連鎖モンテカルロ法でMMSBを推定####
 ##アルゴリズムの設定
 R <- 5000
@@ -160,6 +161,10 @@ index20 <- node_vec[-index_link]
 index21 <- node_vec[index_link]
 
 ##対数尤度の基準値
+#真値での対数尤度
+LLbest <- sum(dbinom(y, 1, rowSums(phit[as.numeric(Z1 %*% 1:k), ] * Z2), log=TRUE))
+
+#1パラメータモデルでの対数尤度
 phi_mu <- mean(y)
 LLst <- sum(dbinom(y, 1, phi_mu, log=TRUE))
 
@@ -178,12 +183,13 @@ for(rp in 1:R){
     Li2[-index_link, j] <- theta2[index20, j] * (1-phi)[, j][z1_vec[index10]]
     Li2[index_link, j] <- theta2[index21, j] * phi[, j][z1_vec[index11]]
   }
-
+  
   #多項分布からノードのトピックを生成
   z1_rate <- Li1 / rowSums(Li1); z2_rate <-  Li2 / rowSums(Li2)   #潜在変数z
   Zi1 <- rmnom(f, 1, z1_rate); Zi2 <- rmnom(f, 1, z2_rate)   #トピックをサンプリング
   z1_vec <- as.numeric(Zi1 %*% 1:k); z2_vec <- as.numeric(Zi2 %*% 1:k)
   Zi1_T <- t(Zi1); Zi2_T <- t(Zi2)
+
   
   ##パラメータをサンプリング
   #トピック分布をサンプリング
@@ -227,7 +233,7 @@ for(rp in 1:R){
     }
     #サンプリング結果の表示
     print(rp)
-    print(c(sum(dbinom(y, 1, phi_vec, log=TRUE)), LLst))
+    print(c(sum(dbinom(y, 1, phi_vec, log=TRUE)), LLbest, LLst))
     print(round(cbind(phi, phit), 3))
   }
 }
@@ -245,4 +251,5 @@ matplot(t(PHI[1, , ]), type="l", xlab="サンプリング回数", ylab="パラメータ")
 matplot(t(PHI[2, , ]), type="l", xlab="サンプリング回数", ylab="パラメータ")
 matplot(t(PHI[3, , ]), type="l", xlab="サンプリング回数", ylab="パラメータ")
 matplot(t(PHI[4, , ]), type="l", xlab="サンプリング回数", ylab="パラメータ")
+
 

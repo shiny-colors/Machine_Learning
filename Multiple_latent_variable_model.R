@@ -111,6 +111,18 @@ repeat {
   }
 }
 
+##テストデータを作成
+#ロジットと確率を設定
+test_id <- rep(1:hh, rtpois(hh, 10.0, a=0, b=Inf))
+f <- length(test_id)
+logit <- as.numeric(Z[test_id, ] %*% beta)
+Prob <- exp(logit) / (1 + exp(logit))
+
+#ベルヌーイ分布から応答変数を生成
+y_test <- rbinom(f, 1, Prob)
+
+ 
+
 ####マルコフ連鎖モンテカルロ法でMultiple lattent variable modelを推定####
 ##切断正規分布の乱数を発生させる関数
 rtnorm <- function(mu, sigma, a, b){
@@ -163,8 +175,8 @@ leapfrog <- function(r, z, D, e, L) {
 loglike <- function(beta, Data, y){
   
   #ロジットと確率を定義
-  logit <- as.numeric(Data %*% beta)
-  prob <- exp(logit) / (1 + exp(logit))
+  mu <- exp(as.numeric(Data %*% beta))
+  prob <- mu / (1 + mu)
   
   #対数尤度の和
   LL <- sum(y*log(prob) + (1-y)*log(1-prob))  
@@ -175,8 +187,8 @@ loglike <- function(beta, Data, y){
 dloglike <- function(beta, Data, y){
   
   #ロジットと確率を定義
-  logit <- as.numeric(Data %*% beta)
-  prob <- exp(logit) / (1 + exp(logit))
+  mu <- exp(as.numeric(Data %*% beta))
+  prob <- mu / (1 + mu)
   
   #勾配ベクトルを計算
   dlogit <- y*Data - Data*prob
@@ -185,7 +197,7 @@ dloglike <- function(beta, Data, y){
 }
 
 ##アルゴリズムの設定
-R <- 5000
+R <- 2500
 keep <- 2  
 iter <- 0
 burnin <- 1000/keep
@@ -237,12 +249,12 @@ b <- ifelse(Zi==1, 100, 0)
 
 ##対数尤度の基準値
 #1パラメータモデルの対数尤度
-LLst <- sum(y*log(mean(y))) + sum((1-y)*log(1-mean(y)))
+LLst <- sum(y_test*log(mean(y_test))) + sum((1-y_test)*log(1-mean(y_test)))
 
 #ベストなパラメータでの対数尤度
-logit <- as.numeric(Z[u_id, ] %*% betat)
+logit <- as.numeric(Z[test_id, ] %*% betat)
 prob <- exp(logit) / (1 + exp(logit))
-LLbest <- sum(y*log(prob) + (1-y)*log(1-prob))
+LLbest <- sum(y_test*log(prob) + (1-y_test)*log(1-prob))
 
 
 ####ギブスサンプリングでパラメータをサンプリング####
@@ -340,9 +352,9 @@ for(rp in 1:R){
   #対数尤度の計算とサンプリング結果の表示
   if(rp==1 | rp%%disp==0){
     #対数尤度を計算
-    logit <- as.numeric(Zi[u_id, ] %*% beta)
+    logit <- as.numeric(Zi[test_id, ] %*% beta)
     prob <- exp(logit) / (1 + exp(logit))
-    LL <- sum(y*log(prob) + (1-y)*log(1-prob))
+    LL <- sum(y_test*log(prob) + (1-y_test)*log(1-prob))
     
     #サンプリング結果を表示
     print(rp)
@@ -351,3 +363,4 @@ for(rp in 1:R){
     print(c(LL, LLst, LLbest))
   }
 }
+
